@@ -2,8 +2,10 @@
 
 A web-based no-limit Texas Hold'em game with two play modes:
 
-- **Offline / single-player** — play against AI opponents entirely in the browser, no server required.
-- **Online multiplayer** — real players in a room, synced over WebSocket.
+- **Offline / single-player** — play against 1-5 AI opponents entirely in the
+  browser: no server, no login, bankroll saved in localStorage.
+- **Online multiplayer** — up to 6 real players in a room joined by code or
+  invite link, synced over WebSocket with reconnect and turn timeouts.
 
 ## Architecture
 
@@ -14,9 +16,10 @@ exact same module on the server and syncs redacted state to clients.
 
 ```
 packages/
-  engine/   Pure poker rules engine (no UI, no network, no timers)  ← Phase 1 ✔
-  web/      React + Vite frontend (offline mode + online client)    ← Phase 2/5
-  server/   Node.js + ws room server (online mode)                  ← Phase 3/4
+  engine/   Pure poker rules engine + AI (no UI, no network, no timers)
+  shared/   Typed WebSocket wire protocol shared by client and server
+  web/      React + Vite frontend (offline game + online client)
+  server/   Node.js + ws room server (lobby, rooms, timeouts, reconnect)
 ```
 
 ### Engine design (`@poker/engine`)
@@ -64,17 +67,47 @@ Rules covered by the engine and its test suite:
 - Chip-conservation invariant fuzz-tested over hundreds of randomly played
   hands with a seeded RNG.
 
+### Online mode design
+
+- **Server is authoritative.** Clients send intents (`{ t: 'action', … }`);
+  the server validates them against the engine and broadcasts each player's
+  *redacted* view. Opponents' hole cards are `UNKNOWN_CARD` placeholders on
+  the wire, so a cheating client has nothing to read.
+- **Rooms** get 5-letter codes (no ambiguous characters) and invite links
+  (`/?room=CODE`). A lobby with ready flags gates the start; the host deals.
+- **Turn clock**: 30 s per decision, then the server checks/folds for the
+  player (3 s for disconnected players so the table doesn't stall).
+- **Reconnect**: each seat has a session token stored in `sessionStorage`;
+  a page reload or dropped connection reclaims the same seat and cards
+  automatically. Leaving for good folds the hand and frees the seat.
+- Busted players re-buy automatically between hands — chips are virtual.
+
+### AI (offline opponents)
+
+`decideAction` estimates hand equity by Monte Carlo simulation against the
+number of live opponents, compares it with the pot odds on offer, and mixes
+in randomized aggression (value bets, occasional bluffs, min-raise handling).
+Pure and seedable — the same module could drive server-side bots.
+
 ## Development
 
 ```sh
 npm install
-npm test          # run all workspace test suites
+npm test                                  # engine + server test suites
+npm run build                             # typecheck everything, bundle web
+
+npm run dev   --workspace @poker/web      # offline mode at :5173 (proxies /ws)
+npm run dev   --workspace @poker/server   # room server at :8080
+npm run start --workspace @poker/server   # serves packages/web/dist too
 ```
+
+Deploy = build the web app, run the server (single Node process) anywhere,
+put both behind one origin; the client connects to `wss://<host>/ws`.
 
 ## Roadmap
 
 1. ✅ Core poker engine + unit tests
-2. ⬜ Offline mode: React UI + pot-odds-aware AI
-3. ⬜ Server + WebSocket sync for online mode
-4. ⬜ Lobby, rooms, reconnect handling
-5. ⬜ UI/UX polish and animations
+2. ✅ Offline mode: React UI + pot-odds AI
+3. ✅ Server + WebSocket sync for online mode
+4. ✅ Lobby, rooms, reconnect handling
+5. ✅ UI/UX polish and animations (deal/chip/turn/winner), mobile layout
