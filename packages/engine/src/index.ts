@@ -24,6 +24,8 @@ export {
 
 export { type PotEntry, type Pot, computePots } from './pots.js';
 
+export { type AiOptions, estimateEquity, decideAction } from './ai.js';
+
 export {
   type Street,
   type Phase,
@@ -35,6 +37,7 @@ export {
   type Action,
   type LegalActions,
   type StartHandOptions,
+  UNKNOWN_CARD,
   createGame,
   startHand,
   applyAction,

@@ -486,16 +486,21 @@ export function totalChips(state: GameState): number {
   return state.players.reduce((sum, p) => sum + p.stack + p.totalBet, 0);
 }
 
+/** Sentinel used in redacted states for a card the viewer may not see. */
+export const UNKNOWN_CARD: Card = -1;
+
 /**
  * A copy of the state safe to send to one player: the deck and every other
- * player's hole cards are hidden. After a showdown, `result.revealed`
- * still discloses showdown hands, as at a real table.
+ * player's hole cards are hidden. Opponents who were dealt in keep two
+ * UNKNOWN_CARD placeholders (so clients can render card backs), while
+ * `null` still means "not dealt into this hand". After a showdown,
+ * `result.revealed` still discloses showdown hands, as at a real table.
  */
 export function redactStateFor(state: GameState, playerId: string): GameState {
   const s = clone(state);
   s.deck = [];
   for (const p of s.players) {
-    if (p.id !== playerId) p.hole = null;
+    if (p.id !== playerId && p.hole !== null) p.hole = [UNKNOWN_CARD, UNKNOWN_CARD];
   }
   return s;
 }

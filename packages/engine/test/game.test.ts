@@ -387,10 +387,11 @@ describe('transport-layer helpers', () => {
     const view = redactStateFor(s, 'B');
     expect(view.deck).toEqual([]);
     expect(player(view, 'B').hole).toEqual(parseCards('Ks Kd'));
-    expect(player(view, 'A').hole).toBeNull();
-    expect(player(view, 'C').hole).toBeNull();
+    // Dealt-in opponents show unknown-card placeholders, not their cards.
+    expect(player(view, 'A').hole).toEqual([-1, -1]);
+    expect(player(view, 'C').hole).toEqual([-1, -1]);
     // The original state is untouched.
-    expect(player(s, 'A').hole).not.toBeNull();
+    expect(player(s, 'A').hole).toEqual(parseCards('As Ad'));
   });
 });
 
