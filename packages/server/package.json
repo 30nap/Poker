@@ -1,0 +1,24 @@
+{
+  "name": "@poker/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "start": "tsx src/main.ts",
+    "dev": "tsx watch src/main.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@poker/engine": "*",
+    "@poker/shared": "*",
+    "tsx": "^4.16.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}
